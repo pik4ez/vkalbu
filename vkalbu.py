@@ -1,10 +1,33 @@
 #!/usr/bin/env python3
 
+import argparse
 import configparser
 import auth
-import vk
 import album
 import track
+from time import sleep
+
+# pip3 install vk
+# https://github.com/dimka665/vk
+import vk
+
+# set args
+args_parser = argparse.ArgumentParser()
+args_parser.add_argument(
+        'albums_list',
+        help='path to file containing albums list in json format'
+        )
+args_parser.add_argument(
+        '--sleep',
+        help='sleep time in seconds between vk api requests',
+        type=int
+        )
+args = args_parser.parse_args()
+
+# set sleep interval between vk api requests
+SLEEP_INTERVAL = 1
+if args.sleep:
+    SLEEP_INTERVAL = args.sleep
 
 # read config
 config = configparser.ConfigParser()
@@ -39,26 +62,32 @@ if __name__ == '__main__':
         album_full_name = '%s — %s (%d)' % (artist, album_name, year)
         album_id = album_api.get_id_by_title(album_full_name)
         if not album_id:
-            print('creating album %s' % (album_full_name))
             album_id = vkapi.audio.addAlbum(title=album_full_name)['album_id']
 
+        tracks_for_album = []
         for track in tracks:
             track_name = track[0]
             track_length = track[1]
-            track_id = track_api.search(
+            track_query = track_api.Query(
                     artist=artist,
                     album=album_name,
                     title=track_name,
                     year=year,
                     length=track_length
                     )
-            print('track_id %r' % (track_name))
+            track_id = track_api.search(track_query)
 
-            # TODO find track
-            # track = vkmus.find(album_name, track_name)
+            if (track_id):
+                tracks_for_album.append(track_id)
 
-            # TODO add to my music
-            # vkmus.add_to_my_music(track)
+            sleep(SLEEP_INTERVAL)
 
-            # TODO add to album
-            # vkmus.add_to_album(track, album)
+        if len(tracks_for_album):
+            print('adding %d tracks to album %s:' % (
+                len(tracks_for_album),
+                album_full_name
+                ))
+            vkapi.audio.moveToAlbum(
+                    album_id=album_id,
+                    album_ids=tracks_for_album
+                    )
