@@ -29,7 +29,7 @@ class Track:
     def search(self, query):
         offset = 0
         count = 100
-        best_match = (0, None, None)
+        best_match = (0, None)
         tracks = self.vkapi.audio.search(
                 q=query.title,
                 auto_complete=0,
@@ -55,9 +55,9 @@ class Track:
                     )
             relevancy = self.get_relevancy(query, vk_track)
             if relevancy > self.RELEVANCY_INSTANT_TRESHOLD:
-                return track['id']
+                return track
             if relevancy > best_match[0]:
-                best_match = (relevancy, track['id'], track)
+                best_match = (relevancy, track)
 
         return best_match[1]
 

@@ -1,0 +1,7 @@
+[user]
+id=<your_vk_page_id>
+login=<your_vk_login>
+password=<your_vk_password>
+
+[app]
+id=<app_id>

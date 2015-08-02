@@ -1,0 +1,21 @@
+{
+    "albums": [
+    {
+        "artist": "SomeArtist",
+        "title": "SomeAlbum",
+        "year": 1970,
+        "tracks": [
+            {"title": "SomeTrackOne", "duration": 100},
+            {"title": "SomeTrackTwo", "duration": 200}
+        ]
+    },
+    {
+        "artist": "AnotherArtist",
+        "title": "AnotherAlbum",
+        "year": 1970,
+        "tracks": [
+            {"title": "AnotherTrackOne", "duration": 100},
+            {"title": "AnotherTrackTwo", "duration": 200}
+        ]
+    }
+]}

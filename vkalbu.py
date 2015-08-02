@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import sys
 import argparse
 import configparser
 import auth
+import albums_parser
 import album
 import track
 from time import sleep
@@ -14,7 +16,7 @@ import vk
 # set args
 args_parser = argparse.ArgumentParser()
 args_parser.add_argument(
-        'albums_list',
+        'albums_file',
         help='path to file containing albums list in json format'
         )
 args_parser.add_argument(
@@ -33,61 +35,70 @@ if args.sleep:
 config = configparser.ConfigParser()
 config.read('auth.ini')
 
-# get token
-token = auth.auth(config['user']['login'], config['user']['password'])
-
 if __name__ == '__main__':
+    albums = albums_parser.AlbumsParser().parse_file(args.albums_file)
+    if not albums:
+        print('empty albums list, exit')
+        sys.exit()
+
     # authorize
-    vkapi = vk.API(
-            access_token=token
-            )
+    token = auth.auth(config['user']['login'], config['user']['password'])
+    vkapi = vk.API(access_token=token, api_version='5.35')
 
     album_api = album.Album(vkapi)
 
-    # TODO read albums list
-    # albums = album_api.parse_albums_file(albums_file)
-    albums = [
-            ('Stone Temple Pilots', 'Core', 2010, [
-                    ('Dead & Bloated', 5 * 60 + 10),
-                    ('Sex Type Thing', 3 * 60 + 38),
-                ]),
-            ]
-
     track_api = track.Track(vkapi)
     for album in albums:
-        artist = album[0]
-        album_name = album[1]
-        year = album[2]
-        tracks = album[3]
-        album_full_name = '%s — %s (%d)' % (artist, album_name, year)
-        album_id = album_api.get_id_by_title(album_full_name)
+        album['full_name'] = '%s — %s (%d)' % (
+                album['artist'],
+                album['title'],
+                album['year']
+                )
+        album_id = album_api.get_id_by_title(album['full_name'])
         if not album_id:
-            album_id = vkapi.audio.addAlbum(title=album_full_name)['album_id']
+            print('creating album "%s"' % album['full_name'])
+            added_album = vkapi.audio.addAlbum(
+                    title=album['full_name']
+                    )
+            album_id = added_album['album_id']
+        else:
+            print('album "%s" exists, reusing' % album['full_name'])
 
         tracks_for_album = []
-        for track in tracks:
-            track_name = track[0]
-            track_length = track[1]
+        for track in album['tracks']:
             track_query = track_api.Query(
-                    artist=artist,
-                    album=album_name,
-                    title=track_name,
-                    year=year,
-                    length=track_length
+                    artist=album['artist'],
+                    album=album['title'],
+                    title=track['title'],
+                    year=album['year'],
+                    length=track['duration']
                     )
-            track_id = track_api.search(track_query)
+            found_track = track_api.search(track_query)
 
-            if (track_id):
-                tracks_for_album.append(track_id)
+            if (found_track):
+                print('found track %d "%s"' % (
+                    found_track['id'],
+                    found_track['title']
+                    ))
+                saved_track = vkapi.audio.add(
+                        audio_id=found_track['id'],
+                        owner_id=config['user']['id']
+                        )
+                print(saved_track)
+                raise Exception('NOT IMPLEMENTED')
+                if saved_track_id:
+                    tracks_for_album.append(saved_track_id)
 
             sleep(SLEEP_INTERVAL)
 
         if len(tracks_for_album):
-            print('adding %d tracks to album %s:' % (
+            print('adding %d tracks to album "%s"' % (
                 len(tracks_for_album),
-                album_full_name
+                album['full_name']
                 ))
+            audio_ids = ",".join(str(i) for i in tracks_for_album)
+            print('audio_ids %s' % audio_ids)
             vkapi.audio.moveToAlbum(
                     album_id=album_id,
-                    album_ids=tracks_for_album
+                    audio_ids=audio_ids
                     )
