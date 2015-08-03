@@ -6,6 +6,7 @@ class Track:
     SORT_DURATION = 1
     SORT_POPULARITY = 2
 
+    # Track which exceeds the threshold instantly taken as the perfect match.
     RELEVANCY_INSTANT_TRESHOLD = 0.8
 
     RELEVANCY_TITLE = 0.4
@@ -17,8 +18,8 @@ class Track:
     VkTrack = namedtuple('Track', ['title', 'artist', 'length'])
 
     """Requires vk api object. """
-    def __init__(self, vkapi):
-        self.vkapi = vkapi
+    def __init__(self, vk):
+        self.vk = vk
 
 
     """Searches for audio track.
@@ -30,8 +31,8 @@ class Track:
         offset = 0
         count = 100
         best_match = (0, None)
-        tracks = self.vkapi.audio.search(
-                q=query.title,
+        tracks = self.vk.audio.search(
+                q='%s %s' % (query.artist, query.title),
                 auto_complete=0,
                 lyrics=0,
                 performer_only=0,
@@ -62,7 +63,15 @@ class Track:
         return best_match[1]
 
 
+    """Calculates relevancy of the found track to search query.
+
+    Returns relevancy as a float between 0 and 1.
+    """
     def get_relevancy(self, query, track):
+
+        print('track:')
+        print(track)
+
         relevancy = self.similar(query.title, track.title) * \
             self.RELEVANCY_TITLE
 
@@ -83,8 +92,11 @@ class Track:
                 bonus = (self.RELEVANCY_LENGTH - diff_penalty)
                 relevancy = relevancy + bonus
 
+        print('relevancy %f' % relevancy)
+
         return relevancy
 
 
+    """Calculates similarity between two strings. """
     def similar(self, a, b):
         return SequenceMatcher(None, a, b).ratio()
