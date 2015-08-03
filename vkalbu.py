@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import select
 import argparse
 import configparser
 import vkapi
@@ -11,9 +12,15 @@ import track
 
 
 # Parse args.
-args_parser = argparse.ArgumentParser()
+usage = "vkalbu.py --file /path/to/albums_list.json\n" + \
+        "cat /path/to/albums_list.json | vkalbu.py"
+description="Discography creator for vk.com."
+args_parser = argparse.ArgumentParser(
+        description=description,
+        usage=usage
+        )
 args_parser.add_argument(
-        'albums_file',
+        '--albums-file',
         help='path to file containing albums list in json format'
         )
 args_parser.add_argument(
@@ -43,7 +50,15 @@ vk = vkapi.VkApi(
 
 # Parse and create albums, search for tracks and add it to albums.
 if __name__ == '__main__':
-    albums = albums_parser.AlbumsParser().parse_file(args.albums_file)
+    # Get albums data from stdin or albums file
+    albparser = albums_parser.AlbumsParser()
+    albums = None
+    if select.select([sys.stdin,],[],[],0.0)[0]:
+        raw_albums = sys.stdin.readlines()
+        albums = albparser.parse_json(raw_albums)
+    elif args.albums_file:
+        albums = albparser.parse_file(args.albums_file)
+
     if not albums:
         print('empty albums list, exit')
         sys.exit()
