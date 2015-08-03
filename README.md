@@ -11,7 +11,7 @@ Usage
 -----
 
 ```
-vkmus.py path/to/albums\_list.json
+vkmus.py path/to/albums_list.json
 ```
 
 See sample albums list in tests/fixtures/albums_list.json.
