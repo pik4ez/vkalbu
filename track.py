@@ -68,10 +68,6 @@ class Track:
     Returns relevancy as a float between 0 and 1.
     """
     def get_relevancy(self, query, track):
-
-        print('track:')
-        print(track)
-
         relevancy = self.similar(query.title, track.title) * \
             self.RELEVANCY_TITLE
 
@@ -91,8 +87,6 @@ class Track:
             if (diff_penalty < self.RELEVANCY_LENGTH):
                 bonus = (self.RELEVANCY_LENGTH - diff_penalty)
                 relevancy = relevancy + bonus
-
-        print('relevancy %f' % relevancy)
 
         return relevancy
 

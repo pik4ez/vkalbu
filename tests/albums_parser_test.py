@@ -3,11 +3,14 @@ import unittest
 import albums_parser
 
 class AlbumsParserTest(unittest.TestCase):
-    def test_parse_file(self):
+    def test_parse_json(self):
         parser = albums_parser.AlbumsParser()
         file_path = os.path.dirname(__file__) + \
                 '/fixtures/albums_list.json'
-        result = parser.parse_file(file_path)
+        with open(file_path, 'r') as f:
+            data = f.read()
+        f.close()
+        result = parser.parse_json(data)
         expected = [
             {
                 "artist": "SomeArtist",
@@ -29,6 +32,11 @@ class AlbumsParserTest(unittest.TestCase):
             }
         ]
         self.assertEqual(result, expected)
+
+
+        # TODO implement
+        def test_is_valid(self):
+            pass
 
 if __name__ == '__main__':
     unittest.main()

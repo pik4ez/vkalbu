@@ -1,18 +1,7 @@
 import json
 
 class AlbumsParser():
-    """Parses albums list json file."""
-    def parse_file(self, file_path):
-        with open(file_path) as fp:
-            res = json.load(fp)
-            if not self.is_valid(res):
-                raise Exception('invalid albums file format')
-            return res['albums']
-        raise Exception('failed to read albums file')
-
-
     """Parses albums list json string."""
-    # TODO test
     def parse_json(self, data):
         res = json.loads(data)
         if not self.is_valid(res):

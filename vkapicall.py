@@ -1,5 +1,6 @@
 # pip3 install vk
 # https://github.com/dimka665/vk
+import sys
 import vk
 from time import sleep
 
@@ -37,7 +38,15 @@ class VkApiCall():
         # As self.method_name can be nested, e.g. "audio.get", we should
         # get api.audio, then api.audio.get, and then call it with kwargs.
         api_method = self.multi_getattr(self.vkapi.api, self.method_name)
-        result = api_method(**kwargs)
+
+        # TODO improve error handling
+        try:
+            result = api_method(**kwargs)
+        except vk.api.VkAPIMethodError as err:
+            print('Vk API exception:')
+            print(err)
+            sys.exit(1)
+
         # TODO store last request time, check it and sleep BEFORE api call
         sleep(self.vkapi.sleep_interval)
 
