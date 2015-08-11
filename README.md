@@ -49,6 +49,24 @@ Running vkalbu with dgrab:
 ```
 
 
+Captcha, sleep and request timeouts
+-----------------------------------
+
+For now, there's no proper handling for captcha requests from vk.com. There's workaround though.
+
+You can increase sleep timeout between requests:
+
+```
+./vkalbu.py --sleep 10
+```
+
+If API calls fail with timeout exception, increase the time of waiting for response from vk.com:
+
+```
+./vkalbu.py --timeout 6
+```
+
+
 Tests
 -----
 
