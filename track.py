@@ -37,7 +37,7 @@ class Track:
                 lyrics=0,
                 performer_only=0,
                 sort=self.SORT_POPULARITY,
-                search_own=0,
+                search_own=1,
                 offset=offset,
                 count=count
                 )
