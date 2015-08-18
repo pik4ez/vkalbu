@@ -42,10 +42,10 @@ class Track:
                 count=count
                 )
 
-        if not tracks['count']:
+        if 'count' not in tracks:
             raise Exception('failed to get tracks count')
 
-        if not tracks['items']:
+        if 'items' not in tracks:
             raise Exception('failed to get tracks list')
 
         for track in tracks['items']:
