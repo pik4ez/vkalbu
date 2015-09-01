@@ -31,16 +31,17 @@ class Track:
         offset = 0
         count = 100
         best_match = (0, None)
-        tracks = self.vk.audio.search(
-                q='%s %s' % (query.artist, query.title),
-                auto_complete=0,
-                lyrics=0,
-                performer_only=0,
-                sort=self.SORT_POPULARITY,
-                search_own=1,
-                offset=offset,
-                count=count
-                )
+        m_args = {
+                'q': '%s %s' % (query.artist, query.title),
+                'auto_complete': 0,
+                'lyrics': 0,
+                'performer_only': 0,
+                'sort': self.SORT_POPULARITY,
+                'search_own': 1,
+                'offset': offset,
+                'count': count
+                }
+        tracks = self.vk.method('audio.search', m_args)
 
         if 'count' not in tracks:
             raise Exception('failed to get tracks count')

@@ -14,7 +14,11 @@ class Album:
         offset = 0
         albums_count = 1
         while offset < albums_count and offset < max_offset:
-            albums = self.vk.audio.getAlbums(count=step, offset=offset)
+            m_args = {
+                    'count': step,
+                    'offset': offset
+                    }
+            albums = self.vk.method('audio.getAlbums', m_args)
             if not albums['count']:
                 raise Exception('failed to get albums count')
             albums_count = albums['count']

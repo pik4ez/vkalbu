@@ -59,3 +59,6 @@ target/
 
 # Auth config
 auth.ini
+
+# vk_api temp file
+vk_config.json

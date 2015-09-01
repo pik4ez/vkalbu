@@ -4,17 +4,15 @@ import os
 import sys
 import argparse
 import configparser
-import vkapi
-import auth
+import vk_api
 import albums_parser
 import album
 import track
+import subprocess
 
 
 # Parse args.
-usage = "vkalbu --albums-file /path/to/albums_list.json\n" + \
-        "cat /path/to/albums_list.json | vkalbu\n" + \
-        "echo '{\"albums\": [ ... albums here ... ]}' | vkalbu"
+usage = "vkalbu /path/to/albums_list.json"
 description="Discography creator for vk.com."
 args_parser = argparse.ArgumentParser(
         description=description,
@@ -22,7 +20,6 @@ args_parser = argparse.ArgumentParser(
         )
 args_parser.add_argument(
         'albums_file',
-        nargs='?',
         help='path to file containing albums list in json format'
         )
 args_parser.add_argument(
@@ -39,33 +36,22 @@ args_parser.add_argument(
         )
 args = args_parser.parse_args()
 
-# Read config.
-config = configparser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/auth.ini')
 
-# Get vk api object.
-token = auth.auth(config['user']['login'], config['user']['password'])
-vk = vkapi.VkApi(
-        token=token,
-        sleep_interval=args.sleep,
-        request_timeout=args.timeout
-        )
-
-
-"""Returns albums list json from stdin or specified file."""
+"""Returns albums list json from specified file."""
 def get_albums_list():
     # Try to read list from file.
     if args.albums_file:
         with open(args.albums_file) as fp:
             albums = fp.read()
             return albums
+    return None
 
-    # Try to read list from stdin.
-    # Don't work in interactive mode.
-    if sys.stdin.isatty():
-        return None
-    albums = sys.stdin.read()
-    return albums
+
+"""Handles captcha request."""
+def captcha_handler(captcha):
+    print("Captcha %s" % captcha.get_url())
+    key = input("Enter captcha code: ").strip()
+    return captcha.try_again(key)
 
 
 # Create vk.com albums, search for tracks and add it to albums.
@@ -74,7 +60,7 @@ if __name__ == '__main__':
     albparser = albums_parser.AlbumsParser()
     albums = get_albums_list()
     if not albums:
-        print('Failed to read albums list. Neither stdin nor file provided.')
+        print('Failed to read albums list. Albums file not provided.')
 
     if not albums:
         print('Empty albums list, exit.')
@@ -82,10 +68,33 @@ if __name__ == '__main__':
 
     albums = albparser.parse_json(albums)
 
+    # Read config.
+    config = configparser.ConfigParser()
+    config.read(os.path.dirname(__file__) + '/auth.ini')
+
+    # Get vk api object.
+    vk = vk_api.VkApi(
+            login=config['user']['login'],
+            password=config['user']['password'],
+            app_id=config['app']['id'],
+            scope='audio',
+            captcha_handler=captcha_handler
+            )
+
+    # Authorize.
+    try:
+        vk.authorization()
+    except vk_api.AuthorizationError as e:
+        print(e)
+        sys.exit()
+
+    # Init APIs for albums and tracks.
     album_api = album.Album(vk)
     track_api = track.Track(vk)
 
+    # Process provided albums.
     for album in albums:
+        # Create album if doesn't exist.
         album['full_name'] = '%s — %s (%d)' % (
                 album['artist'],
                 album['title'],
@@ -94,13 +103,15 @@ if __name__ == '__main__':
         album_id = album_api.get_id_by_title(album['full_name'])
         if not album_id:
             print('Creating album "%s".' % album['full_name'])
-            added_album = vk.audio.addAlbum(
-                    title=album['full_name']
-                    )
+            m_args = {
+                    'title': album['full_name']
+                    }
+            added_album = vk.method('audio.addAlbum', m_args)
             album_id = added_album['album_id']
         else:
             print('album "%s" exists, reusing' % album['full_name'])
 
+        # Find tracks, collect their information.
         tracks_for_album = []
         for track in reversed(album['tracks']):
             track_query = track_api.Query(
@@ -119,13 +130,15 @@ if __name__ == '__main__':
                     found_track['id'],
                     found_track['title']
                     ))
-                saved_track_id = vk.audio.add(
-                        audio_id=found_track['id'],
-                        owner_id=found_track['owner_id']
-                        )
+                m_args = {
+                        'audio_id': found_track['id'],
+                        'owner_id': found_track['owner_id']
+                        }
+                saved_track_id = vk.method('audio.add', m_args)
                 if saved_track_id:
                     tracks_for_album.append(saved_track_id)
 
+        # Add all the found tracks into album at once.
         if len(tracks_for_album):
             print('Adding %d tracks to album "%s".' % (
                 len(tracks_for_album),
@@ -133,8 +146,9 @@ if __name__ == '__main__':
                 ))
             audio_ids = ",".join(str(i) for i in tracks_for_album)
             print('Audio_ids %s.' % audio_ids)
-            vk.audio.moveToAlbum(
-                    album_id=album_id,
-                    audio_ids=audio_ids
-                    )
+            m_args = {
+                    'album_id': album_id,
+                    'audio_ids': audio_ids
+                    }
+            vk.method('audio.moveToAlbum', m_args)
             print('Done.')
