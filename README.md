@@ -10,60 +10,49 @@ Built on top of vk.com API v5.35.
 Usage
 -----
 
-Get vk.com auth token (described here: https://vk.com/dev/auth_sites).
-Paste it to auth.py (temporary, should be fixed).
-
-```
-chmod 0400 auth.py
-```
-
 Create auth config and write your vk auth data there:
 
 ```
 cp auth.ini.template auth.ini
-# edit file
+# Paste your auth data
 chmod 0400 auth.ini
 ```
 
-Create albums list. Find sample in tests/fixtures/albums_list.json.
-Run vkalbu:
+You can get your page ID from your vk.com home page URI.
+To get app id, create application and go to application settings page.
+
+The simplest way to run vkalbu is to create albums list and run
+the script similar to https://gist.github.com/pik4ez/bd628d53f2818574b683.
+
+It uses https://github.com/pik4ez/dgrab.
+
+Albums list is a file with one link to album per line.
+Link to album is a link to page containing album data no the site
+supported by dgrab (see dgrab docs). For example:
 
 ```
-./vkalbu.py /path/to/albums_list.json
+http://www.discogs.com/Judas-Priest-Screaming-For-Vengeance/master/26341
+http://www.discogs.com/Judas-Priest-Defenders-Of-The-Faith/master/26183
+http://www.allmusic.com/album/godsmack-mw0000042111
+http://www.allmusic.com/album/faceless-mw0000023020
 ```
 
-Inline json can be passed to STDIN:
+After albums list created, just run the starter script:
 
 ```
-echo '{"albums": [ <albums list here> ]}' | ./vkalbu.py
+chmod +x /path/to/vkalbu_starter
+/path/to/vkalbu_starter
 ```
 
-Some kind of parser can be used to prepare albums list in proper format.
-Luckily enough, dgrab lives in neighbour repo, check it out:
-https://github.com/pik4ez/dgrab.
+You can write your own albums parser. In this case, get sample albums
+list in vkalbu native format from file tests/fixtures/albums_list.json
+and teach your parser to make similar output. Then feed vkalbu with it.
 
-Running vkalbu with dgrab:
-
-```
-./dgrab.py http://www.allmusic.com/album/stone-temple-pilots-mw0001975741 | ./vkalbu.py
-```
-
-
-Captcha, sleep and request timeouts
------------------------------------
-
-For now, there's no proper handling for captcha requests from vk.com. There's workaround though.
-
-You can increase sleep timeout between requests:
+Something like this:
 
 ```
-./vkalbu.py --sleep 10
-```
-
-If API calls fail with timeout exception, increase the time of waiting for response from vk.com:
-
-```
-./vkalbu.py --timeout 6
+my_shiny_parser http://site.com/band/album.html > /some/tmp/file.json
+/path/to/vkalbu.py /some/tmp/file.json
 ```
 
 
